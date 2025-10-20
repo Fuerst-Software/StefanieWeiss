@@ -44,7 +44,7 @@ img{max-width:100%;height:auto;display:block}
 .hero{position:relative;background:#000;color:var(--ink);touch-action:pan-y}
 .hero__bg{position:absolute;inset:0;overflow:hidden;touch-action:pan-y}
 
-/* WICHTIG: Bild größer als Viewport und zentriert → keine Ränder bei Parallax */
+/* Bild größer als Viewport und zentriert → keine Ränder beim Parallax */
 #heroImg{
   position:absolute; left:0; right:0; width:100%;
   height:115%; top:-7.5%;
@@ -56,7 +56,7 @@ img{max-width:100%;height:auto;display:block}
 
 .hero__overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.65))}
 #glitterCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.7}
-@media (max-width:600px){#glitterCanvas{mix-blend-mode:normal;opacity:.55}}
+@media (max-width:600px){#glitterCanvas{mix-blend-mode:normal;opacity:.6}}
 
 .hero__content{position:relative;min-height:min(86vh,860px);display:grid;place-items:center}
 .title-wrap{display:flex;align-items:center;gap:28px;width:100%}
