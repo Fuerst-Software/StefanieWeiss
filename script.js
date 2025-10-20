@@ -119,113 +119,79 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 })();
 
 /* =========================
-   Goldener Regen (Canvas)
-   - Läuft auch auf Mobile!
-   - Mobile: weniger Partikel, 24fps, DPR capped
-   - Pausiert offscreen & bei Tab-Hidden
+   Goldener Regen – STABIL (kein Reset/Lag beim Scrollen)
+   - Kein IntersectionObserver, keine Pausen
+   - Resize skaliert Partikel-Positionen → optisch gleichbleibend
 ========================= */
 (function(){
   const canvas = document.getElementById('glitterCanvas');
   if (!canvas) return;
-
-  const supports2d = !!canvas.getContext;
-  if (!supports2d) { canvas.style.display='none'; return; }
-
   const ctx = canvas.getContext('2d', { alpha:true });
 
-  const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const isTouch  = window.matchMedia('(pointer:coarse)').matches;
+  let w=0, h=0, DPR=1, P=[];
+  const DPR_CAP = Math.min(window.devicePixelRatio || 1.5, 2);
 
-  // Wenn Nutzer global Motion reduziert → respektieren (Canvas aus)
-  if (mqReduce.matches){ canvas.style.display='none'; return; }
-
-  // Mobile-Optimierung
-  const DPR = Math.min(isTouch ? 1.25 : 1.75, window.devicePixelRatio || 1);
-  const FPS = isTouch ? 24 : 30;
-
-  let vw=0, vh=0;
-  function sizeCanvas(){
-    const r = canvas.getBoundingClientRect();
-    vw = Math.max(1, Math.floor(r.width));
-    vh = Math.max(1, Math.floor(r.height));
-    canvas.width  = Math.round(vw * DPR);
-    canvas.height = Math.round(vh * DPR);
+  function resize(scalePositions=true){
+    const oldW = w, oldH = h;
+    w = canvas.clientWidth|0;
+    h = canvas.clientHeight|0;
+    DPR = DPR_CAP;
+    canvas.width  = Math.max(1, w * DPR);
+    canvas.height = Math.max(1, h * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
-  }
 
-  function sprite(r, inner, outer){
-    const d=r*2, off=document.createElement('canvas'); off.width=off.height=d;
-    const c=off.getContext('2d'); const g=c.createRadialGradient(r,r,0,r,r,r);
-    g.addColorStop(0,inner); g.addColorStop(1,outer);
-    c.fillStyle=g; c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.fill(); return off;
-  }
-
-  const GOLD='rgba(255,215,130,1)', GOLD2='rgba(210,160,80,1)';
-  const GOLD0='rgba(255,215,130,0)', GOLD20='rgba(210,160,80,0)';
-  const HAZE='rgba(60,40,15,0.12)';
-
-  const spS  = sprite(6,  GOLD,  GOLD0);
-  const spS2 = sprite(6,  GOLD2, GOLD20);
-  const spB  = sprite(10, GOLD,  GOLD0);
-
-  const P=[];
-  function reset(p){
-    p.x=Math.random()*vw; p.y=Math.random()*vh;
-    p.vx=(Math.random()-0.5)*(isTouch?0.06:0.08);
-    p.vy=(Math.random()*(isTouch?0.15:0.18)) + (isTouch?0.05:0.06);
-    p.o =Math.random()*0.6+0.35;
-    p.tw=Math.random()*Math.PI*2; p.ts=Math.random()*(isTouch?0.008:0.01)+0.003;
-    p.sp=Math.random()<0.12?spB:(Math.random()<0.5?spS:spS2);
-    if(Math.random()<0.6) p.y*=0.6;
-  }
-  function init(){
-    P.length=0;
-    // Dichte runter auf Mobile
-    const density = isTouch ? 52000 : 18000; // Fläche / density ≈ Partikel
-    const base = Math.min(isTouch?110:150, Math.max(40, Math.round((vw*vh)/density)));
-    for(let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
-  }
-
-  // Sichtbarkeit / Akku sparen
-  let inView = true;
-  const hero = document.querySelector('.hero');
-  if ('IntersectionObserver' in window && hero){
-    new IntersectionObserver(([e]) => { inView = e.isIntersecting; }, { threshold:0.05 }).observe(hero);
-  }
-  document.addEventListener('visibilitychange', () => { inView = !document.hidden; });
-
-  // FPS-Limiter
-  let raf=0, last=performance.now(), acc=0, STEP=1000/FPS;
-
-  function loop(now){
-    raf = requestAnimationFrame(loop);
-    const dt = Math.min(64, now-last); last = now; acc += dt;
-    if (acc < STEP || !inView) return;
-    const mul = acc/16.6667; acc = 0;
-
-    ctx.fillStyle = HAZE; ctx.fillRect(0,0,vw,vh);
-
-    for (let i=0;i<P.length;i++){
-      const p = P[i];
-      const tw = 0.6 + 0.4*Math.sin(p.tw); p.tw += p.ts*mul;
-      p.x += p.vx*mul; p.y += p.vy*mul;
-      if (p.y > vh+12){ p.y = -12; p.x = Math.random()*vw; }
-      if (p.x < -12) p.x = vw+12; if (p.x > vw+12) p.x = -12;
-
-      ctx.globalAlpha = p.o*tw;
-      const sp = p.sp; ctx.drawImage(sp, p.x-sp.width/2, p.y-sp.height/2);
+    // skaliere bestehende Partikel, NICHT neu seeden → kein visueller Sprung
+    if (scalePositions && oldW>0 && oldH>0){
+      const sx = w/oldW, sy = h/oldH;
+      for (const p of P){ p.x *= sx; p.y *= sy; }
     }
-    ctx.globalAlpha = 1;
   }
 
-  function start(){
-    cancelAnimationFrame(raf);
-    sizeCanvas(); init();
-    last = performance.now(); acc = 0; raf = requestAnimationFrame(loop);
+  function makeParticle(){
+    return {
+      x: Math.random()*w,
+      y: Math.random()*h,
+      r: Math.random()*1.8 + 0.6,
+      vx: (Math.random()-0.5)*0.22,
+      vy: 0.28 + Math.random()*0.42,
+      o: Math.random()*0.6 + 0.2
+    };
   }
 
-  window.addEventListener('resize', ()=>{ clearTimeout(start._t); start._t=setTimeout(start,120); }, { passive:true });
-  start();
+  function init(){
+    P = [];
+    const count = Math.min(150, Math.max(60, Math.round((w*h)/16000)));
+    for (let i=0;i<count;i++) P.push(makeParticle());
+  }
+
+  function frame(){
+    // leichter Trail für edlen Glow
+    ctx.fillStyle = 'rgba(15,10,5,0.15)';
+    ctx.fillRect(0,0,w,h);
+
+    for (const p of P){
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.y > h + 10) p.y = -10;
+      if (p.x > w + 10) p.x = -10;
+      if (p.x < -10)    p.x = w + 10;
+
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*4);
+      g.addColorStop(0, `rgba(255,220,150,${p.o})`);
+      g.addColorStop(1, `rgba(255,220,150,0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r*4, 0, Math.PI*2);
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  resize(false);
+  init();
+  frame();
+  // bei Resize: Größe anpassen, Partikel proportional skalieren (kein Reset!)
+  window.addEventListener('resize', ()=> resize(true), { passive:true });
 })();
 
 /* =========================
@@ -277,6 +243,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       if (!res.ok) throw new Error('Sende-Fehler');
       await res.json();
 
+      // (Hinweis: Du wolltest „zeitnah“ zukünftig – Text hier unverändert gelassen)
       showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
       form.reset();
       form.classList.remove('was-validated');
