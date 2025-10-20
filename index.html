@@ -204,7 +204,7 @@
           Die Zusammenarbeit vereint <strong>ästhetisches Design</strong> mit <strong>technischer Präzision</strong>.
         </p>
 
-        <div class="btn-row" style="margin: top 1.6rem;";>
+        <div class="btn-row" style="margin: top 1.6rem;">
           <a class="btn" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">
             Rabattcode auf Instagram sichern
           </a>
@@ -285,66 +285,7 @@
       </div>
 
       <!-- Kontaktformular-Logik inline (wie gewünscht) -->
-      <script>
-        (() => {
-          const form = document.getElementById('contactForm');
-          if (!form) return;
-
-          const getEl = (id) => document.getElementById(id);
-          const nameEl = getEl('name');
-          const emailEl = getEl('email');
-          const msgEl = getEl('msg');
-
-          const statusBox = document.getElementById('cf-toast');
-
-          function showStatus(text, ok = true) {
-            statusBox.style.display = 'block';
-            statusBox.textContent = text;
-            statusBox.className = ok ? 'toast toast--ok' : 'toast toast--err';
-            statusBox.id = 'cf-toast';
-          }
-
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!form.checkValidity()) {
-              form.classList.add('was-validated');
-              showStatus('Bitte alle Pflichtfelder korrekt ausfüllen.', false);
-              return;
-            }
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const oldLabel = submitBtn ? submitBtn.textContent : null;
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wird gesendet…'; }
-
-            try {
-              const fd = new FormData();
-              fd.append('name', nameEl.value.trim());
-              fd.append('email', emailEl.value.trim());
-              fd.append('message', msgEl.value.trim());
-              fd.append('_subject', 'Neue Anfrage über fuerst-software.com');
-              fd.append('_template', 'table');
-              fd.append('_captcha', 'false');
-              fd.append('_honey', '');
-
-              const res = await fetch('https://formsubmit.co/ajax/mail@fuerst-software.com', {
-                method: 'POST',
-                body: fd,
-                headers: { 'Accept': 'application/json' }
-              });
-              if (!res.ok) throw new Error('Sende-Fehler');
-              await res.json();
-
-              showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
-              form.reset();
-              form.classList.remove('was-validated');
-            } catch (err) {
-              showStatus('Uff, da ist etwas schiefgelaufen. Versuch’s später nochmal.', false);
-              console.error(err);
-            } finally {
-              if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = oldLabel; }
-            }
-          });
-        })();
-      </script>
+      <script src="script.js" defer></script>
     </section>
   </main>
 
@@ -359,6 +300,5 @@
     </div>
   </footer>
 
-  <script src="script.js" defer></script>
 </body>
 </html>
