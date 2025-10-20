@@ -32,8 +32,9 @@
     <!-- HERO -->
     <section class="hero" role="banner" aria-label="Hero">
       <div class="hero__bg">
-        <img src="hintergrund.png" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+        <img id="heroImg" src="hintergrund.png" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
         <div class="hero__overlay"></div>
+        <!-- Canvas nur Desktop; auf Mobile via CSS ausgeblendet -->
         <canvas id="glitterCanvas" aria-hidden="true"></canvas>
       </div>
 
@@ -262,13 +263,6 @@
         <div class="contact__card card">
           <h2 class="sec-title sec-title--small">Zusammenarbeit Anfragen</h2>
 
-          <style>
-            #cf-toast{margin-top:12px;font-size:.95rem;line-height:1.4;padding:10px 12px;border-radius:10px;border:1px solid transparent}
-            #cf-toast.success{color:#0f5132;background:#d1e7dd;border-color:#badbcc}
-            #cf-toast.error{color:#842029;background:#f8d7da;border-color:#f5c2c7}
-            #contactForm.was-validated input:invalid,#contactForm.was-validated textarea:invalid{border-color:#b00020}
-          </style>
-
           <form id="contactForm" class="grid grid-2" action="#" method="post" novalidate>
             <label class="field"><span>Name*</span><input id="name" type="text" name="name" required autocomplete="name"></label>
             <label class="field"><span>E-Mail*</span><input id="email" type="email" name="email" required autocomplete="email" inputmode="email"></label>
@@ -276,7 +270,9 @@
             <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
             <div class="field field--full"><button class="btn" type="submit">Absenden</button></div>
           </form>
-          <p id="cf-toast" style="display:none;"></p>
+
+          <!-- Statusausgabe -->
+          <p id="cf-toast" class="toast" style="display:none;"></p>
         </div>
 
         <aside class="contact__aside card">
@@ -287,6 +283,68 @@
           </div>
         </aside>
       </div>
+
+      <!-- Kontaktformular-Logik inline (wie gewünscht) -->
+      <script>
+        (() => {
+          const form = document.getElementById('contactForm');
+          if (!form) return;
+
+          const getEl = (id) => document.getElementById(id);
+          const nameEl = getEl('name');
+          const emailEl = getEl('email');
+          const msgEl = getEl('msg');
+
+          const statusBox = document.getElementById('cf-toast');
+
+          function showStatus(text, ok = true) {
+            statusBox.style.display = 'block';
+            statusBox.textContent = text;
+            statusBox.className = ok ? 'toast toast--ok' : 'toast toast--err';
+            statusBox.id = 'cf-toast';
+          }
+
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.checkValidity()) {
+              form.classList.add('was-validated');
+              showStatus('Bitte alle Pflichtfelder korrekt ausfüllen.', false);
+              return;
+            }
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const oldLabel = submitBtn ? submitBtn.textContent : null;
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wird gesendet…'; }
+
+            try {
+              const fd = new FormData();
+              fd.append('name', nameEl.value.trim());
+              fd.append('email', emailEl.value.trim());
+              fd.append('message', msgEl.value.trim());
+              fd.append('_subject', 'Neue Anfrage über fuerst-software.com');
+              fd.append('_template', 'table');
+              fd.append('_captcha', 'false');
+              fd.append('_honey', '');
+
+              const res = await fetch('https://formsubmit.co/ajax/mail@fuerst-software.com', {
+                method: 'POST',
+                body: fd,
+                headers: { 'Accept': 'application/json' }
+              });
+              if (!res.ok) throw new Error('Sende-Fehler');
+              await res.json();
+
+              showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
+              form.reset();
+              form.classList.remove('was-validated');
+            } catch (err) {
+              showStatus('Uff, da ist etwas schiefgelaufen. Versuch’s später nochmal.', false);
+              console.error(err);
+            } finally {
+              if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = oldLabel; }
+            }
+          });
+        })();
+      </script>
     </section>
   </main>
 
