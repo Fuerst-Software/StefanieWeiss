@@ -100,7 +100,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       fd.append('_captcha', 'false');
       fd.append('_honey', '');
 
-      const res = await fetch('https://formsubmit.co/ajax/mail@fuerst-software.com', {
+      const res = await fetch('https://formsubmit.co/ajax/mama.moments@gmx.de', {
         method: 'POST',
         body: fd,
         headers: { 'Accept': 'application/json' }
@@ -108,7 +108,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       if (!res.ok) throw new Error('Sende-Fehler');
       await res.json();
 
-      showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
+      showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns zeitnah.', true);
       form.reset();
       form.classList.remove('was-validated');
     } catch (err) {
