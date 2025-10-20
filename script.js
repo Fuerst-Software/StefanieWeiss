@@ -55,73 +55,16 @@ const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================
-   Parallax (Mobile-first)
+   Parallax (DEAKTIVIERT für maximale Ruhe)
+   -> Bild bleibt exakt wie beim Laden.
 ========================= */
-(function(){
-  const heroImg = document.getElementById('heroImg') || document.querySelector('.hero__bg img');
-  const heroSec = document.querySelector('.hero');
-  if (!heroImg || !heroSec) return;
-
-  const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const mqCoarse = window.matchMedia('(pointer:coarse)');
-
-  const maxOffset = ()=> mqCoarse.matches ? 36 : 16;
-  const ease      = ()=> mqCoarse.matches ? 0.18 : 0.12;
-
-  let MAX = maxOffset(), EASE = ease();
-  let secTop=0, secH=0, vh=window.innerHeight;
-
-  function measure(){
-    const r = heroSec.getBoundingClientRect();
-    secTop = (window.pageYOffset || document.documentElement.scrollTop || 0) + r.top;
-    secH   = r.height;
-    vh     = window.innerHeight || document.documentElement.clientHeight;
-    MAX    = maxOffset(); EASE = ease();
-  }
-
-  let targetY=0, currentY=0, ticking=false, inView=true;
-
-  if ('IntersectionObserver' in window){
-    new IntersectionObserver(([entry])=>{
-      inView = entry.isIntersecting;
-      if (inView) requestTick();
-    }, { threshold:0.01 }).observe(heroSec);
-  }
-
-  const compute = (scrollY)=>{
-    const start = secTop - vh;
-    const end   = secTop + secH;
-    const p     = Math.max(0, Math.min(1, (scrollY - start)/(end - start)));
-    return (p - 0.5) * -MAX;
-  };
-
-  function onScroll(){
-    if (mqReduce.matches || !inView) return;
-    requestTick();
-  }
-  function requestTick(){
-    if (ticking) return; ticking=true; requestAnimationFrame(update);
-  }
-  function update(){
-    ticking=false;
-    const y = window.pageYOffset || document.documentElement.scrollTop || 0;
-    targetY = compute(y);
-    currentY += (targetY - currentY) * EASE;
-    heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
-  }
-
-  window.addEventListener('scroll', onScroll, { passive:true });
-  window.addEventListener('resize', ()=>{ measure(); requestTick(); }, { passive:true });
-  mqReduce.addEventListener?.('change', ()=> mqReduce.matches ? (heroImg.style.transform='translate3d(0,0,0)') : (measure(),requestTick()));
-  mqCoarse.addEventListener?.('change', ()=>{ measure(); requestTick(); });
-
-  measure(); requestTick();
-})();
+// (absichtlich leer gelassen)
 
 /* =========================
-   Goldener Regen – STABIL (kein Reset/Lag beim Scrollen)
-   - Kein IntersectionObserver, keine Pausen
-   - Resize skaliert Partikel-Positionen → optisch gleichbleibend
+   Goldener Regen – ultra stabil (scroll-unabhängig)
+   - Keine Pausen/Observer; läuft konstant
+   - Delta-Zeit für konstante Geschwindigkeit
+   - Resize skaliert Partikel-Positionen proportional (kein Reset)
 ========================= */
 (function(){
   const canvas = document.getElementById('glitterCanvas');
@@ -140,7 +83,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     canvas.height = Math.max(1, h * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    // skaliere bestehende Partikel, NICHT neu seeden → kein visueller Sprung
     if (scalePositions && oldW>0 && oldH>0){
       const sx = w/oldW, sy = h/oldH;
       for (const p of P){ p.x *= sx; p.y *= sy; }
@@ -164,14 +106,19 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     for (let i=0;i<count;i++) P.push(makeParticle());
   }
 
-  function frame(){
-    // leichter Trail für edlen Glow
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(50, now - last); // ms, capped
+    last = now;
+    const mul = dt / 16.6667; // 60fps-Normalisierung
+
+    // weicher Trail (Glow)
     ctx.fillStyle = 'rgba(15,10,5,0.15)';
     ctx.fillRect(0,0,w,h);
 
     for (const p of P){
-      p.x += p.vx;
-      p.y += p.vy;
+      p.x += p.vx * mul;
+      p.y += p.vy * mul;
       if (p.y > h + 10) p.y = -10;
       if (p.x > w + 10) p.x = -10;
       if (p.x < -10)    p.x = w + 10;
@@ -189,8 +136,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   resize(false);
   init();
-  frame();
-  // bei Resize: Größe anpassen, Partikel proportional skalieren (kein Reset!)
+  requestAnimationFrame(frame);
   window.addEventListener('resize', ()=> resize(true), { passive:true });
 })();
 
@@ -243,7 +189,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       if (!res.ok) throw new Error('Sende-Fehler');
       await res.json();
 
-      // (Hinweis: Du wolltest „zeitnah“ zukünftig – Text hier unverändert gelassen)
       showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
       form.reset();
       form.classList.remove('was-validated');
