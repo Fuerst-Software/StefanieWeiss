@@ -40,16 +40,16 @@ img{max-width:100%;height:auto;display:block}
   body.menu-open{overflow:hidden}
 }
 
-/* HERO (mobil statisch, desktop leichtes Parallax) */
+/* HERO */
 .hero{position:relative;background:#000;color:var(--ink);touch-action:pan-y}
 .hero__bg{position:absolute;inset:0;overflow:hidden;touch-action:pan-y}
-#heroImg{width:100%;height:100%;object-fit:cover;object-position:center;filter:saturate(.9) brightness(.7);will-change:transform;transform:translate3d(0,0,0)}
+#heroImg{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  filter:saturate(.9) brightness(.7);
+  will-change:transform; transform:translate3d(0,0,0);
+}
 .hero__overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.65))}
 #glitterCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.7}
-@media (pointer:coarse){ /* Mobile: keine Canvas/Parallax -> absolut statisch */
-  #glitterCanvas{display:none}
-  #heroImg{transform:none}
-}
 
 .hero__content{position:relative;min-height:min(86vh,860px);display:grid;place-items:center}
 .title-wrap{display:flex;align-items:center;gap:28px;width:100%}
