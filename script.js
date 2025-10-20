@@ -31,7 +31,7 @@ if (toggle && menu){
     const href = a.getAttribute('href') || '';
     const isHash = href.startsWith('#') && href.length > 1;
 
-    closeMenu(); // IMMER schließen (auch Instagram etc.)
+    closeMenu(); // immer schließen
 
     if (isHash){
       const target = document.querySelector(href);
@@ -68,10 +68,10 @@ const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================================
-   Ultra-smooth Parallax für Hero (auch Mobile)
-   - Kein touchmove nötig (nur Scroll/RAF) → kein Jank
-   - Rechnet relativ zu pageYOffset → auf iOS stabil
-   - Mobile stärker sichtbar als zuvor
+   Ultra-smooth Parallax für Hero (Mobile-first)
+   - Stärker auf Mobile (coarse pointer), dezenter auf Desktop
+   - Bild ist 115% hoch → kein Rand beim Shiften
+   - rAF + passive Scroll; pausiert offscreen; reduced-motion respektiert
 ========================================= */
 (function(){
   const heroImg = document.getElementById('heroImg');
@@ -80,28 +80,28 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  // Dynamische Stärke: Mobile bekommt mehr Offset, Desktop etwas weniger (weil Canvas + GPU)
   function getMaxOffset(){
     const coarse = window.matchMedia('(pointer:coarse)').matches;
-    return coarse ? 22 : 16; // px
+    // Mobile kriegt mehr Movement
+    return coarse ? 36 : 16; // px
   }
   let MAX = getMaxOffset();
-  let EASE = 0.12; // Nachzieh-Geschwindigkeit
+  let EASE = window.matchMedia('(pointer:coarse)').matches ? 0.18 : 0.12;
 
-  // Sektion-Top/Height per Layout, stabil für iOS
+  // Layout-Messung
   let secTop = 0, secHeight = 0, vh = window.innerHeight;
   function measure(){
     const rect = heroSec.getBoundingClientRect();
-    // rect.top relativ zum Viewport → auf Pageoffset umrechnen
     secTop = (window.pageYOffset || document.documentElement.scrollTop) + rect.top;
     secHeight = rect.height;
     vh = window.innerHeight || document.documentElement.clientHeight;
     MAX = getMaxOffset();
+    EASE = window.matchMedia('(pointer:coarse)').matches ? 0.18 : 0.12;
   }
 
   let targetY = 0, currentY = 0, ticking = false, inView = true;
 
-  // Sichtbarkeit (spart Batterie)
+  // Sichtbarkeit (pausieren spart Batterie)
   if ('IntersectionObserver' in window){
     const io = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting;
@@ -111,12 +111,10 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   }
 
   function computeTarget(scrollY){
-    // progress: 0..1, wenn der Viewport die Sektion durchläuft
     const start = secTop - vh;
     const end   = secTop + secHeight;
     const progressRaw = (scrollY - start) / (end - start);
     const progress = Math.max(0, Math.min(1, progressRaw));
-    // map auf -0.5..+0.5 und skaliere mit MAX
     return (progress - 0.5) * -MAX;
   }
 
@@ -135,8 +133,9 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     ticking = false;
     const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
     targetY = computeTarget(scrollY);
-    // sanftes Nachziehen
+    // Sanftes Nachziehen
     currentY += (targetY - currentY) * EASE;
+    // kleine Skalierung sorgt für saubere Kanten bei starkem Shift
     heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
   }
 
@@ -262,4 +261,67 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   }, { passive:true });
 
   start();
+})();
+
+/* =========================================
+   Kontaktformular (FormSubmit)
+========================================= */
+(() => {
+  const form = document.getElementById('contactForm');
+  if (!form) return;
+
+  const getEl = (id) => document.getElementById(id);
+  const nameEl = getEl('name');
+  const emailEl = getEl('email');
+  const msgEl = getEl('msg');
+
+  const statusBox = document.getElementById('cf-toast');
+
+  function showStatus(text, ok = true) {
+    statusBox.style.display = 'block';
+    statusBox.textContent = text;
+    statusBox.className = ok ? 'toast toast--ok' : 'toast toast--err';
+    statusBox.id = 'cf-toast';
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      showStatus('Bitte alle Pflichtfelder korrekt ausfüllen.', false);
+      return;
+    }
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const oldLabel = submitBtn ? submitBtn.textContent : null;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wird gesendet…'; }
+
+    try {
+      const fd = new FormData();
+      fd.append('name', nameEl.value.trim());
+      fd.append('email', emailEl.value.trim());
+      fd.append('message', msgEl.value.trim());
+      fd.append('_subject', 'Neue Anfrage über fuerst-software.com');
+      fd.append('_template', 'table');
+      fd.append('_captcha', 'false');
+      fd.append('_honey', '');
+
+      const res = await fetch('https://formsubmit.co/ajax/mail@fuerst-software.com', {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('Sende-Fehler');
+      await res.json();
+
+      showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
+      form.reset();
+      form.classList.remove('was-validated');
+    } catch (err) {
+      showStatus('Uff, da ist etwas schiefgelaufen. Versuch’s später nochmal.', false);
+      console.error(err);
+    } finally {
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = oldLabel; }
+    }
+  });
 })();
