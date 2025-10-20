@@ -26,7 +26,8 @@ if (toggle && menu){
     menu.classList.contains('open') ? closeMenu() : openMenu();
   });
 
-  // Menü-Links: IMMER Menü schließen. Bei Ankerlinks zusätzlich smooth scrollen.
+  // Menü: Klick auf egal welchen Link -> Menü schließen.
+  // Bei Ankerlinks zusätzlich smooth scroll.
   menu.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (!a) return;
@@ -34,20 +35,18 @@ if (toggle && menu){
     const href = a.getAttribute('href') || '';
     const isHash = href.startsWith('#') && href.length > 1;
 
-    // Menü direkt schließen (auch für externe Links / target=_blank)
+    // Menü direkt schließen (auch bei externen Links wie Instagram).
     closeMenu();
 
     if (isHash){
       const target = document.querySelector(href);
       if (target){
         e.preventDefault();
-        // kleine Verzögerung, damit das Menü-Animation sauber zugeht
         setTimeout(() => {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 160);
+        }, 150);
       }
     }
-    // Bei externen Links kein preventDefault -> Browser navigiert normal.
   });
 
   // ESC schließt
@@ -77,50 +76,83 @@ const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================================
-   Desktop Parallax für Hero-Bild (sehr dezent)
-   - nur auf Desktop (pointer:fine)
-   - auf Mobile komplett statisch
+   Sanftes Parallax für Hero-Bild (ruckelfrei)
+   - Desktop: etwas stärker
+   - Mobile/Touch: sehr leicht, kein Touch-Handler, nur Scroll + RAF
 ========================================= */
 (function(){
   const heroImg = document.getElementById('heroImg');
-  if (!heroImg) return;
+  const heroSec = document.querySelector('.hero');
+  if (!heroImg || !heroSec) return;
 
-  const isDesktop = window.matchMedia('(pointer:fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!isDesktop) {
-    // Mobile/Tablet oder reduced motion -> keine Bewegung
-    heroImg.style.transform = 'translate3d(0,0,0)';
-    return;
-  }
+  const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const isTouch = window.matchMedia('(pointer:coarse)');
+
+  // Faktoren: Desktop spürbar, Mobile dezent
+  let maxOffset = isTouch.matches ? 6 : 14; // px
+  let ease = 0.08;
+
+  // bei Änderungen (z.B. iPad Trackpad) neu setzen
+  prefersReduce.addEventListener?.('change', setup);
+  isTouch.addEventListener?.('change', setup);
+  window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = 0; onScroll(); }, { passive:true });
 
   let targetY = 0, currentY = 0, raf = 0;
-  const strength = 0.15; // Bewegungstiefe (sehr dezent)
+
+  function setup(){
+    if (prefersReduce.matches){
+      // Keine Bewegung
+      heroImg.style.transform = 'translate3d(0,0,0)';
+      cancelAnimationFrame(raf); raf = 0;
+      return;
+    }
+    // Touch sehr dezent
+    maxOffset = isTouch.matches ? 6 : 14;
+    onScroll();
+  }
 
   function onScroll(){
-    const rect = heroImg.closest('.hero')?.getBoundingClientRect();
-    if (!rect) return;
-    // Anteil, wie weit die Hero-Section im Viewport ist
-    const viewportH = window.innerHeight || document.documentElement.clientHeight;
-    const progress = Math.min(1, Math.max(0, (viewportH - rect.top) / (viewportH + rect.height)));
-    targetY = (progress - 0.5) * 30 * strength; // max ~2-3px je nach Stärke
+    // Nur scroll-basierte Berechnung, kein touchmove -> kein Jank
+    const rect = heroSec.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+
+    // Normalisierte Position der Section im Viewport
+    // -1 (über dem Viewport) .. 0 (oben) .. 1 (unten)
+    const norm = ((rect.top + rect.height/2) - vh/2) / (vh + rect.height);
+    targetY = -norm * maxOffset;
+
     if (!raf) raf = requestAnimationFrame(tick);
   }
 
   function tick(){
     raf = 0;
-    // sanftes Nachziehen
-    currentY += (targetY - currentY) * 0.08;
+    currentY += (targetY - currentY) * ease;
     heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
+  // IntersectionObserver: nur animieren, wenn sichtbar
+  let inView = true;
+  if ('IntersectionObserver' in window){
+    const io = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      if (inView) onScroll();
+    }, { threshold: 0.05 });
+    io.observe(heroSec);
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!inView || prefersReduce.matches) return;
+    onScroll();
+  }, { passive: true });
+
+  setup();
   onScroll();
 })();
 
 /* =========================================
    Glitter-Canvas (nur Desktop, jank-frei)
-   - Mobile/Touch: komplett aus
-   - 30 fps Limiter, DPR capped, pausiert offscreen
+   - Mobile/Touch & Reduced-Motion: deaktiviert (Element entfernt)
+   - 30fps Limiter, DPR capped, pausiert offscreen
 ========================================= */
 (function(){
   const canvas = document.getElementById('glitterCanvas');
@@ -129,14 +161,12 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = window.matchMedia('(pointer:coarse)').matches;
   if (prefersReduce || isTouch){
-    // Für Mobile/Touch oder Reduced-Motion: keine Canvas-Animation
-    if (canvas.parentNode) canvas.parentNode.removeChild(canvas); // Element entfernen -> kein Reflow
+    // Mobile/Touch oder Reduced-Motion: entfernen
+    canvas.remove();
     return;
   }
 
   const ctx = canvas.getContext('2d', { alpha:true });
-
-  // DPR begrenzen (scharf genug, CPU/GPU freundlich)
   const DPR = Math.min(1.5, window.devicePixelRatio || 1);
   let vw = 0, vh = 0;
 
@@ -185,7 +215,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   }
   function init(){
     P.length = 0;
-    // adaptive Anzahl, Cap für Performance
     const base = Math.min(140, Math.max(60, Math.round((vw*vh)/18000)));
     for (let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
   }
@@ -211,7 +240,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     if (acc < STEP || !inView) return;
     const mul = acc / 16.6667; acc = 0;
 
-    // leichter Haze, kein voller Clear -> softe Trails
     ctx.fillStyle = HAZE;
     ctx.fillRect(0,0,vw,vh);
 
