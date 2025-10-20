@@ -77,8 +77,9 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================================
    Sanftes Parallax für Hero-Bild (ruckelfrei)
-   - Desktop: etwas stärker
-   - Mobile/Touch: sehr leicht, kein Touch-Handler, nur Scroll + RAF
+   - Desktop: spürbar
+   - Mobile/Touch: dezent, aber aktiv
+   -> Nur Scroll-basierte Berechnung (kein touchmove), RAF gefiltert
 ========================================= */
 (function(){
   const heroImg = document.getElementById('heroImg');
@@ -88,38 +89,44 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   const isTouch = window.matchMedia('(pointer:coarse)');
 
-  // Faktoren: Desktop spürbar, Mobile dezent
-  let maxOffset = isTouch.matches ? 6 : 14; // px
-  let ease = 0.08;
+  let maxOffset = isTouch.matches ? 10 : 18; // px Bewegungstiefe
+  let ease = 0.10;                           // Nachzieh-Geschwindigkeit
 
-  // bei Änderungen (z.B. iPad Trackpad) neu setzen
   prefersReduce.addEventListener?.('change', setup);
   isTouch.addEventListener?.('change', setup);
-  window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = 0; onScroll(); }, { passive:true });
 
-  let targetY = 0, currentY = 0, raf = 0;
+  let targetY = 0, currentY = 0, raf = 0, inView = true;
+
+  // Sichtbarkeit überwachen -> spart Rechenzeit
+  if ('IntersectionObserver' in window){
+    const io = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      if (inView) onScroll();
+    }, { threshold: 0.05 });
+    io.observe(heroSec);
+  }
 
   function setup(){
     if (prefersReduce.matches){
-      // Keine Bewegung
+      // Keine Bewegung gewünscht
       heroImg.style.transform = 'translate3d(0,0,0)';
       cancelAnimationFrame(raf); raf = 0;
       return;
     }
-    // Touch sehr dezent
-    maxOffset = isTouch.matches ? 6 : 14;
+    maxOffset = isTouch.matches ? 10 : 18;
     onScroll();
   }
 
   function onScroll(){
-    // Nur scroll-basierte Berechnung, kein touchmove -> kein Jank
+    if (prefersReduce.matches || !inView) return;
+
+    // Nur Scroll + getBoundingClientRect -> kein Touch-Listener, kein Jank
     const rect = heroSec.getBoundingClientRect();
     const vh = window.innerHeight || document.documentElement.clientHeight;
 
-    // Normalisierte Position der Section im Viewport
-    // -1 (über dem Viewport) .. 0 (oben) .. 1 (unten)
+    // Position des Abschnitts relativ zum Viewportmittelpunkt normalisieren
     const norm = ((rect.top + rect.height/2) - vh/2) / (vh + rect.height);
-    targetY = -norm * maxOffset;
+    targetY = -norm * maxOffset; // bewegt leicht entgegen der Scrollrichtung
 
     if (!raf) raf = requestAnimationFrame(tick);
   }
@@ -130,20 +137,8 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
   }
 
-  // IntersectionObserver: nur animieren, wenn sichtbar
-  let inView = true;
-  if ('IntersectionObserver' in window){
-    const io = new IntersectionObserver(([entry]) => {
-      inView = entry.isIntersecting;
-      if (inView) onScroll();
-    }, { threshold: 0.05 });
-    io.observe(heroSec);
-  }
-
-  window.addEventListener('scroll', () => {
-    if (!inView || prefersReduce.matches) return;
-    onScroll();
-  }, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = 0; onScroll(); }, { passive:true });
 
   setup();
   onScroll();
@@ -161,8 +156,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = window.matchMedia('(pointer:coarse)').matches;
   if (prefersReduce || isTouch){
-    // Mobile/Touch oder Reduced-Motion: entfernen
-    canvas.remove();
+    canvas.remove(); // mobil aus Performance-Gründen deaktiviert
     return;
   }
 
@@ -219,7 +213,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     for (let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
   }
 
-  // Sichtbarkeit steuern
   let inView = true;
   const hero = document.querySelector('.hero');
   if ('IntersectionObserver' in window && hero){
@@ -253,8 +246,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       if (p.x > vw + 12) p.x = -12;
 
       ctx.globalAlpha = p.o * tw;
-      const sp = p.sp;
-      ctx.drawImage(sp, p.x - sp.width/2, p.y - sp.height/2);
+      ctx.drawImage(p.sp, p.x - p.sp.width/2, p.y - p.sp.height/2);
     }
     ctx.globalAlpha = 1;
   }
