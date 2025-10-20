@@ -221,54 +221,165 @@
     <!-- Kooperation -->
     <section id="kooperation" class="section section--alt">
       <div class="container narrow">
-        <h2 class="sec-title">Kooperation mit RINGANA</h2>
-        <p class="sec-lead">
-          Nachhaltigkeit trifft Bewusstsein – in meiner Kooperation mit <strong>RINGANA</strong> verbinde ich
-          moderne Online-Strategie mit einer Marke, die für Reinheit, Verantwortung und Wirkung steht.
-        </p>
-        <p>
-          <strong>RINGANA</strong> ist ein österreichisches Unternehmen, das seit 1996 für frische, vegane und hochwirksame Pflegeprodukte steht – 
-          frei von künstlichen Zusätzen und kompromisslos nachhaltig.
-        </p>
-        <div class="card" style="margin-top:1.6rem;">
-          <h3 class="card__title">Warum RINGANA?</h3>
-          <ul class="list">
-            <li>Frischekosmetik mit rein pflanzlichen Wirkstoffen</li>
-            <li>Nachhaltige Produktion & Zero-Waste-Verpackungen</li>
-            <li>Fairer Direktvertrieb mit Partnerprogramm</li>
-            <li>Vegan, tierversuchsfrei & Made in Austria</li>
-          </ul>
-         <div class="btn-row" style="margin-top:1rem;">
-  <a class="btn" href="https://www.ringana.com" target="_blank" rel="noopener">Mehr über RINGANA erfahren</a>
-  <a class="btn btn--ghost" href="#contact" rel="noopener">Kooperation anfragen</a>
+        <h2 class="sec-title">Arbeite mit mir zusammen </h2>
+     <p class="sec-lead">
+  Du hast noch kein Produkt oder bist dir bei deinem jetzigen nicht ganz sicher,  
+  ob es wirklich den Erfolg bringt, den du dir wünschst? 💭  
+  Rechnungslegung, Mahnwesen oder Lagerung würdest du dir gerne ersparen?
+</p>
+
+<p>
+  Dann arbeite mit mir und meinem <strong>grünen Partnerunternehmen</strong> zusammen! 🌿  
+  Hier sparst du dir nicht nur <strong>Geld & Zeit</strong>, sondern auch den kompletten Aufwand  
+  von der Produktidee bis hin zum Verkauf – denn alles wird dir <strong>fix & fertig</strong> zur Verfügung gestellt.
+</p>
+
+<p>
+  Du arbeitest mit <strong>hochwertigsten österreichischen Naturprodukten</strong>,  
+  einem perfekt eingerichteten <strong>Onlineshop</strong> und deinem persönlichen <strong>Bestelllink</strong>.  
+  So kannst du dich voll und ganz auf das konzentrieren, was zählt: deine <strong>Vermarktung</strong>.
+</p>
+
+<p>
+  Deine Aufgabe? Ganz einfach:  
+  Du kümmerst dich lediglich um die <strong>Vermarktung</strong>, arbeitest mit mir <strong>1:1 persönlich</strong> zusammen  
+  und wirst dafür <strong>großzügig am Umsatz beteiligt</strong>. 💰
+</p>
+
+<p>
+  Das klingt spannend?  
+  Dann schreib mir einfach deinen <strong>Instagram-Namen</strong> oder deine <strong>Telefonnummer</strong>  
+  in das untere Feld, und ich melde mich zeitnah bei dir, um offene Fragen zu klären. ✍️
+</p>
+
+<div class="btn-row" style="margin-top:1rem;">
+  <a class="btn" href="#contact">Jetzt Zusammenarbeit Anfragen</a>
+  <a class="btn btn--ghost" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">Direkt auf Instagram schreiben</a>
 </div>
+
+         
 
         </div>
       </div>
     </section>
 
     <!-- CONTACT -->
-    <section id="contact" class="section section--contact">
-      <div class="container contact grid grid-2">
-        <div class="contact__card card">
-          <h2 class="sec-title sec-title--small">Projekt anfragen</h2>
-          <form class="grid grid-2" action="#" method="post" novalidate>
-            <label class="field"><span>Name*</span><input type="text" name="name" required></label>
-            <label class="field"><span>E-Mail*</span><input type="email" name="email" required></label>
-            <label class="field field--full"><span>Projekt / Ziel*</span><textarea name="msg" rows="4" required></textarea></label>
-            <div class="field field--full"><button class="btn" type="submit">Absenden</button></div>
-          </form>
+   <section id="contact" class="section section--contact">
+  <div class="container contact grid grid-2">
+    <div class="contact__card card">
+      <h2 class="sec-title sec-title--small">Zusammenarbeit Anfragen</h2>
+
+      <!-- Mini-Styles nur für den Status-Toast -->
+      <style>
+        #cf-toast{
+          margin-top:12px; font-size:.95rem; line-height:1.4;
+          padding:10px 12px; border-radius:10px; border:1px solid transparent;
+        }
+        #cf-toast.success{ color:#0f5132; background:#d1e7dd; border-color:#badbcc; }
+        #cf-toast.error{ color:#842029; background:#f8d7da; border-color:#f5c2c7; }
+        /* optional: roter Rand bei ungültigen Feldern */
+        #contactForm.was-validated input:invalid,
+        #contactForm.was-validated textarea:invalid{ border-color:#b00020; }
+      </style>
+
+      <form id="contactForm" class="grid grid-2" action="#" method="post" novalidate>
+        <label class="field">
+          <span>Name*</span>
+          <input id="name" type="text" name="name" required autocomplete="name">
+        </label>
+
+        <label class="field">
+          <span>E-Mail*</span>
+          <input id="email" type="email" name="email" required autocomplete="email" inputmode="email">
+        </label>
+
+        <label class="field field--full">
+          <span>Projekt / Ziel*</span>
+          <textarea id="msg" name="msg" rows="4" required></textarea>
+        </label>
+
+        <!-- Honeypot gegen Bots -->
+        <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+        <div class="field field--full">
+          <button class="btn" type="submit">Absenden</button>
         </div>
-        <aside class="contact__aside card">
-          <h3 class="card__title">Direkt vernetzen</h3>
-          <div class="stack">
-               <a class="btn" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">Instagram</a>
-            <a class="btn" href="https://www.fuerst-software.com" target="_blank" rel="noopener">Website-Erstellung</a>
-          </div>
-        </aside>
+      </form>
+
+      <p id="cf-toast" style="display:none;"></p>
+    </div>
+
+    <aside class="contact__aside card">
+      <h3 class="card__title">Direkt vernetzen</h3>
+      <div class="stack">
+        <a class="btn" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">Instagram</a>
+        <a class="btn" href="https://www.fuerst-software.com" target="_blank" rel="noopener">Website-Erstellung</a>
       </div>
-    </section>
-  </main>
+    </aside>
+  </div>
+
+  <script>
+    (() => {
+      const form = document.getElementById('contactForm');
+      if (!form) return;
+
+      const nameEl = document.getElementById('name');
+      const emailEl = document.getElementById('email');
+      const msgEl = document.getElementById('msg');
+      const statusBox = document.getElementById('cf-toast');
+
+      function showStatus(text, ok = true) {
+        statusBox.style.display = 'block';
+        statusBox.textContent = text;
+        statusBox.className = ok ? 'success' : 'error';
+        statusBox.id = 'cf-toast'; // ensure id stays
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          showStatus('Bitte alle Pflichtfelder korrekt ausfüllen.', false);
+          return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const oldLabel = submitBtn ? submitBtn.textContent : null;
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wird gesendet…'; }
+
+        try {
+          const fd = new FormData();
+          fd.append('name', nameEl.value.trim());
+          fd.append('email', emailEl.value.trim());
+          fd.append('message', msgEl.value.trim());
+          fd.append('_subject', 'Neue Anfrage über fuerst-software.com');
+          fd.append('_template', 'table');
+          fd.append('_captcha', 'false');
+          fd.append('_honey', '');
+
+          const res = await fetch('https://formsubmit.co/ajax/mail@fuerst-software.com', {
+            method: 'POST',
+            body: fd,
+            headers: { 'Accept': 'application/json' }
+          });
+          if (!res.ok) throw new Error('Sende-Fehler');
+          await res.json();
+
+          showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
+          form.reset();
+          form.classList.remove('was-validated');
+        } catch (err) {
+          showStatus('Uff, da ist etwas schiefgelaufen. Versuch’s später nochmal.', false);
+          console.error(err);
+        } finally {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = oldLabel; }
+        }
+      });
+    })();
+  </script>
+</section>
+<!-- CONTACT -->
 
   <footer class="footer">
     <div class="container footer__inner">
@@ -284,4 +395,3 @@
   <script src="script.js" defer></script>
 </body>
 </html>
-
