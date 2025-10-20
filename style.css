@@ -44,20 +44,22 @@ img{max-width:100%;height:auto;display:block}
 .hero{position:relative;background:#000;color:var(--ink);touch-action:pan-y}
 .hero__bg{position:absolute;inset:0;overflow:hidden;touch-action:pan-y}
 
-/* Bild größer als Viewport und zentriert → keine Ränder beim Parallax */
+/* Bild fix & GPU-promoted (keine Parallax mehr) */
 #heroImg{
-  position:absolute; left:0; right:0; width:100%;
-  height:115%; top:-7.5%;
+  position:absolute; left:0; top:0; width:100%; height:115%;
   object-fit:cover; object-position:center;
   filter:saturate(.9) brightness(.7);
-  will-change:transform;
-  transform:translate3d(0,0,0);
+  transform:translateZ(0); will-change:transform;
 }
 
 .hero__overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.65))}
+
+/* Canvas stabil & auf eigener Ebene */
 #glitterCanvas{
-  position:absolute;inset:0;width:100%;height:100%;
-  z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.7;will-change:transform
+  position:absolute; inset:0; width:100%; height:100%;
+  z-index:2; pointer-events:none;
+  mix-blend-mode:screen; opacity:.7;
+  transform:translateZ(0); will-change:transform;
 }
 @media (max-width:600px){#glitterCanvas{mix-blend-mode:normal;opacity:.6}}
 
@@ -82,7 +84,7 @@ img{max-width:100%;height:auto;display:block}
 
 .grid{display:grid;gap:clamp(16px,2vw,24px)}
 .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1,1fr))}
 @media (max-width:980px){.grid-2,.grid-3{grid-template-columns:1fr}}
 
 .cards .card{padding:0;overflow:hidden;background:var(--bg-800);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
