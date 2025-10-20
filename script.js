@@ -1,6 +1,4 @@
-/* =========================================
-   Header / Mobile Navigation / Smooth Scroll
-========================================= */
+/* ===== Mobile Nav: fixed header, closable menu ===== */
 const header = document.getElementById('site-nav');
 const toggle = document.querySelector('.nav__toggle');
 const menu   = document.getElementById('navmenu');
@@ -20,38 +18,34 @@ function closeMenu(){
   toggle?.setAttribute('aria-label','Menü öffnen');
 }
 if (toggle && menu){
-  toggle.addEventListener('click', () => {
-    menu.classList.contains('open') ? closeMenu() : openMenu();
-  });
+  toggle.addEventListener('click', ()=> menu.classList.contains('open') ? closeMenu() : openMenu());
 
-  // Jeder Link im Menü schließt das Menü; Anker scrollen smooth
+  // Close on any link (auch externe), smooth scroll für Hash-Links
   menu.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (!a) return;
     const href = a.getAttribute('href') || '';
     const isHash = href.startsWith('#') && href.length > 1;
-
-    closeMenu(); // immer schließen
-
+    closeMenu();
     if (isHash){
       const target = document.querySelector(href);
       if (target){
         e.preventDefault();
-        setTimeout(() => target.scrollIntoView({ behavior:'smooth', block:'start' }), 140);
+        setTimeout(()=> target.scrollIntoView({ behavior:'smooth', block:'start' }), 150);
       }
     }
   });
 
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
 }
 
-// Header-Schatten
-window.addEventListener('scroll', () => {
-  const y = window.scrollY || window.pageYOffset;
-  header.style.boxShadow = y > 6 ? '0 12px 28px rgba(0,0,0,.35)' : 'none';
-}, { passive: true });
+// Header shadow
+window.addEventListener('scroll', ()=>{
+  const y = window.scrollY || window.pageYOffset || 0;
+  header && (header.style.boxShadow = y > 6 ? '0 12px 28px rgba(0,0,0,.35)' : 'none');
+}, { passive:true });
 
-// Smooth-Scroll für interne Links außerhalb des Menüs
+// Smooth scroll outside nav
 document.querySelectorAll('a[href^="#"]:not(#navmenu a)').forEach(a=>{
   a.addEventListener('click', (e)=>{
     const id = a.getAttribute('href');
@@ -63,115 +57,99 @@ document.querySelectorAll('a[href^="#"]:not(#navmenu a)').forEach(a=>{
   });
 });
 
-// Footer-Jahr
+// Footer year
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-/* =========================================
-   Ultra-smooth Parallax für Hero (Mobile-first)
-   - Stärker auf Mobile (coarse pointer), dezenter auf Desktop
-   - Bild ist 115% hoch → kein Rand beim Shiften
-   - rAF + passive Scroll; pausiert offscreen; reduced-motion respektiert
-========================================= */
+/* ===== Hero Parallax (Mobile-first, jank-free) =====
+   - Stärker auf Touch (pointer:coarse), dezenter auf Desktop
+   - Bild ist 115% hoch (siehe CSS) → keine Ränder beim Shift
+   - rAF, passive scroll, pausiert offscreen, respektiert reduced motion
+*/
 (function(){
-  const heroImg = document.getElementById('heroImg');
+  const heroImg = document.getElementById('heroImg') || document.querySelector('.hero__bg img');
   const heroSec = document.querySelector('.hero');
   if (!heroImg || !heroSec) return;
 
-  const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mqCoarse = window.matchMedia('(pointer:coarse)');
 
-  function getMaxOffset(){
-    const coarse = window.matchMedia('(pointer:coarse)').matches;
-    // Mobile kriegt mehr Movement
-    return coarse ? 36 : 16; // px
-  }
-  let MAX = getMaxOffset();
-  let EASE = window.matchMedia('(pointer:coarse)').matches ? 0.18 : 0.12;
+  function maxOffset(){ return mqCoarse.matches ? 36 : 16; }   // px Bewegung
+  function ease(){ return mqCoarse.matches ? 0.18 : 0.12; }    // Nachzieh-Geschwindigkeit
 
-  // Layout-Messung
-  let secTop = 0, secHeight = 0, vh = window.innerHeight;
+  let MAX = maxOffset(), EASE = ease();
+  let secTop = 0, secH = 0, vh = window.innerHeight;
+
   function measure(){
     const rect = heroSec.getBoundingClientRect();
-    secTop = (window.pageYOffset || document.documentElement.scrollTop) + rect.top;
-    secHeight = rect.height;
-    vh = window.innerHeight || document.documentElement.clientHeight;
-    MAX = getMaxOffset();
-    EASE = window.matchMedia('(pointer:coarse)').matches ? 0.18 : 0.12;
+    secTop = (window.pageYOffset || document.documentElement.scrollTop || 0) + rect.top;
+    secH   = rect.height;
+    vh     = window.innerHeight || document.documentElement.clientHeight;
+    MAX    = maxOffset();
+    EASE   = ease();
   }
 
   let targetY = 0, currentY = 0, ticking = false, inView = true;
 
-  // Sichtbarkeit (pausieren spart Batterie)
+  // Pause offscreen
   if ('IntersectionObserver' in window){
-    const io = new IntersectionObserver(([entry]) => {
+    new IntersectionObserver(([entry])=>{
       inView = entry.isIntersecting;
       if (inView) requestTick();
-    }, { threshold: 0.01 });
-    io.observe(heroSec);
+    }, { threshold: 0.01 }).observe(heroSec);
   }
 
-  function computeTarget(scrollY){
+  function compute(scrollY){
     const start = secTop - vh;
-    const end   = secTop + secHeight;
-    const progressRaw = (scrollY - start) / (end - start);
-    const progress = Math.max(0, Math.min(1, progressRaw));
-    return (progress - 0.5) * -MAX;
+    const end   = secTop + secH;
+    const pRaw  = (scrollY - start) / (end - start);
+    const p     = Math.max(0, Math.min(1, pRaw));
+    return (p - 0.5) * -MAX; // oben negativ, unten positiv
   }
 
   function onScroll(){
-    if (prefersReduce.matches || !inView) return;
+    if (mqReduce.matches || !inView) return;
     requestTick();
   }
-
   function requestTick(){
     if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(update);
+    ticking = true; requestAnimationFrame(update);
   }
-
   function update(){
     ticking = false;
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-    targetY = computeTarget(scrollY);
-    // Sanftes Nachziehen
+    const y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    targetY = compute(y);
     currentY += (targetY - currentY) * EASE;
-    // kleine Skalierung sorgt für saubere Kanten bei starkem Shift
     heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
   }
 
   window.addEventListener('scroll', onScroll, { passive:true });
-  window.addEventListener('resize', () => { measure(); requestTick(); }, { passive:true });
-  prefersReduce.addEventListener?.('change', () => {
-    if (prefersReduce.matches){
+  window.addEventListener('resize', ()=>{ measure(); requestTick(); }, { passive:true });
+  mqReduce.addEventListener?.('change', ()=> {
+    if (mqReduce.matches){
       heroImg.style.transform = 'translate3d(0,0,0)';
     } else {
       measure(); requestTick();
     }
   });
+  mqCoarse.addEventListener?.('change', ()=>{ measure(); requestTick(); });
 
-  // Initial
-  measure();
-  requestTick();
+  // initial
+  measure(); requestTick();
 })();
 
-/* =========================================
-   Glitter-Canvas (nur Desktop, jank-frei)
-   - Mobile/Touch & Reduced-Motion: deaktiviert (Element entfernt)
-   - 30fps Limiter, DPR capped, pausiert offscreen
-========================================= */
+/* ===== Glitter Canvas (no jank; off on touch & reduced motion) ===== */
 (function(){
   const canvas = document.getElementById('glitterCanvas');
   if (!canvas) return;
 
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = window.matchMedia('(pointer:coarse)').matches;
-  if (prefersReduce || isTouch){
-    canvas.remove();
-    return;
-  }
+  // Auf Touch-Geräten & bei reduced motion deaktivieren → schützt Mobile-Performance
+  if (prefersReduce || isTouch){ canvas.remove(); return; }
 
   const ctx = canvas.getContext('2d', { alpha:true });
-  const DPR = Math.min(1.5, window.devicePixelRatio || 1);
+  const DPR = Math.min(1.25, window.devicePixelRatio || 1);
   let vw = 0, vh = 0;
 
   function sizeCanvas(){
@@ -183,14 +161,13 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     ctx.setTransform(DPR,0,0,DPR,0,0);
   }
 
-  function makeSprite(r, inner, outer){
-    const d = r*2;
-    const off = document.createElement('canvas');
+  function sprite(r, inner, outer){
+    const d = r*2, off = document.createElement('canvas');
     off.width = off.height = d;
-    const o = off.getContext('2d');
-    const g = o.createRadialGradient(r, r, 0, r, r, r);
+    const c = off.getContext('2d');
+    const g = c.createRadialGradient(r,r,0,r,r,r);
     g.addColorStop(0, inner); g.addColorStop(1, outer);
-    o.fillStyle = g; o.beginPath(); o.arc(r, r, r, 0, Math.PI*2); o.fill();
+    c.fillStyle = g; c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.fill();
     return off;
   }
 
@@ -198,9 +175,9 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const GOLD0='rgba(255,215,130,0)', GOLD20='rgba(210,160,80,0)';
   const HAZE='rgba(60,40,15,0.12)';
 
-  const spS  = makeSprite(6,  GOLD,  GOLD0);
-  const spS2 = makeSprite(6,  GOLD2, GOLD20);
-  const spB  = makeSprite(10, GOLD,  GOLD0);
+  const spS  = sprite(6,  GOLD,  GOLD0);
+  const spS2 = sprite(6,  GOLD2, GOLD20);
+  const spB  = sprite(10, GOLD,  GOLD0);
 
   const P=[];
   function reset(p){
@@ -208,7 +185,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     p.vx=(Math.random()-0.5)*0.08; p.vy=Math.random()*0.18+0.05;
     p.o=Math.random()*0.6+0.35; p.tw=Math.random()*Math.PI*2; p.ts=Math.random()*0.01+0.003;
     p.sp=Math.random()<0.12?spB:(Math.random()<0.5?spS:spS2);
-    if(Math.random()<0.6) p.y*=0.6;
+    if (Math.random()<0.6) p.y*=0.6;
   }
   function init(){
     P.length=0;
@@ -216,56 +193,43 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     for(let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
   }
 
-  // Sichtbarkeit
+  // Pause offscreen
   let inView = true;
   const hero = document.querySelector('.hero');
   if ('IntersectionObserver' in window && hero){
-    const io = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; }, { threshold:0.05 });
-    io.observe(hero);
+    new IntersectionObserver(([e])=>{ inView = e.isIntersecting; }, {threshold:0.05}).observe(hero);
   }
-  document.addEventListener('visibilitychange', () => { inView = !document.hidden; });
+  document.addEventListener('visibilitychange', ()=>{ inView = !document.hidden; });
 
-  // 30fps Limiter
+  // 30fps limiter
   let raf=0, last=performance.now(), acc=0; const STEP=1000/30;
-
-  function frame(now){
-    raf=requestAnimationFrame(frame);
+  function loop(now){
+    raf=requestAnimationFrame(loop);
     const dt=Math.min(64, now-last); last=now; acc+=dt;
     if (acc<STEP || !inView) return;
     const mul=acc/16.6667; acc=0;
 
     ctx.fillStyle=HAZE; ctx.fillRect(0,0,vw,vh);
-
-    for (let i=0;i<P.length;i++){
-      const p=P[i];
+    for(const p of P){
       const tw=0.6+0.4*Math.sin(p.tw); p.tw+=p.ts*mul;
       p.x+=p.vx*mul; p.y+=p.vy*mul;
-      if (p.y>vh+12){p.y=-12; p.x=Math.random()*vw;}
-      if (p.x<-12) p.x=vw+12; if (p.x>vw+12) p.x=-12;
-
-      ctx.globalAlpha=p.o*tw;
-      ctx.drawImage(p.sp, p.x-p.sp.width/2, p.y-p.sp.height/2);
+      if(p.y>vh+12){p.y=-12; p.x=Math.random()*vw;}
+      if(p.x<-12) p.x=vw+12; if(p.x>vw+12) p.x=-12;
+      ctx.globalAlpha=p.o*tw; const sp=p.sp;
+      ctx.drawImage(sp, p.x-sp.width/2, p.y-sp.height/2);
     }
     ctx.globalAlpha=1;
   }
 
   function start(){
     cancelAnimationFrame(raf);
-    sizeCanvas(); init();
-    last=performance.now(); acc=0;
-    raf=requestAnimationFrame(frame);
+    sizeCanvas(); init(); last=performance.now(); acc=0; raf=requestAnimationFrame(loop);
   }
-
-  window.addEventListener('resize', () => {
-    clearTimeout(start._t); start._t=setTimeout(start,120);
-  }, { passive:true });
-
+  window.addEventListener('resize', ()=>{ clearTimeout(start._t); start._t=setTimeout(start,120); }, { passive:true });
   start();
 })();
 
-/* =========================================
-   Kontaktformular (FormSubmit)
-========================================= */
+/* ===== Kontaktformular (FormSubmit) ===== */
 (() => {
   const form = document.getElementById('contactForm');
   if (!form) return;
@@ -274,7 +238,6 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const nameEl = getEl('name');
   const emailEl = getEl('email');
   const msgEl = getEl('msg');
-
   const statusBox = document.getElementById('cf-toast');
 
   function showStatus(text, ok = true) {
@@ -320,8 +283,8 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
       showStatus('Uff, da ist etwas schiefgelaufen. Versuch’s später nochmal.', false);
       console.error(err);
     } finally {
-      const submitBtn = form.querySelector('button[type="submit"]');
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = oldLabel; }
+      const submitBtn2 = form.querySelector('button[type="submit"]');
+      if (submitBtn2) { submitBtn2.disabled = false; submitBtn2.textContent = oldLabel; }
     }
   });
 })();
