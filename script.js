@@ -1,8 +1,6 @@
 /* ================================
-   NAV & Interaktion (dein Code)
+   NAV & Basis-Interaktion
 ================================ */
-
-// --- Mobile Nav Toggle ---
 const toggle = document.querySelector('.nav__toggle');
 const menu = document.querySelector('#navmenu');
 
@@ -20,14 +18,12 @@ if (toggle && menu) {
   toggle.addEventListener('click', () => menu.classList.contains('open') ? close() : open());
 }
 
-// --- Subtiler Schatten auf Scroll ---
 const header = document.querySelector('#site-nav');
 window.addEventListener('scroll', () => {
   const y = window.scrollY || window.pageYOffset;
   header.style.boxShadow = y > 6 ? '0 12px 28px rgba(0,0,0,.35)' : 'none';
 });
 
-// --- Smooth Scrolling ---
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
     const id = a.getAttribute('href');
@@ -41,11 +37,9 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   });
 });
 
-// --- Footer Jahr ---
 const y = document.getElementById('year');
 if (y) y.textContent = new Date().getFullYear();
 
-// --- Simple Form-Guard ---
 const form = document.querySelector('form');
 if (form){
   form.addEventListener('submit', e=>{
@@ -55,126 +49,154 @@ if (form){
   });
 }
 
-
 /* ================================
-   ✨ Gold-Braune Glitter-Animation
-   Canvas: sanft schwebende Partikel
+   ✨ Optimierte Glitter-Animation
+   - DPR capped
+   - adaptive Partikel
+   - Sprite statt Gradients
+   - 30fps Limiter
+   - Pause offscreen / hidden
 ================================ */
-
 (function(){
   const canvas = document.getElementById('glitterCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: true });
 
-  // DevicePixelRatio für knackige 4K/Retina-Schärfe
+  const DPR = Math.min(1.25, window.devicePixelRatio || 1); // cap for mobile
+  let vw = 0, vh = 0;
+
   function sizeCanvas(){
-    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const { width, height } = canvas.getBoundingClientRect();
-    canvas.width  = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rect = canvas.getBoundingClientRect();
+    vw = Math.max(1, Math.floor(rect.width));
+    vh = Math.max(1, Math.floor(rect.height));
+    canvas.width  = Math.round(vw * DPR);
+    canvas.height = Math.round(vh * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
 
-  // Farbpalette (gold-braun) passend zum BG
-  const GOLD  = 'rgba(255, 215, 130, 0.9)';   // warmes Gold
-  const GOLD2 = 'rgba(210, 160, 80,  0.85)';  // etwas dunkler
-  const AMBI  = 'rgba(60, 40, 15, 0.15)';     // zarter Nebel
+  // Sprite vorbereiten (Glow-Dot)
+  function makeSprite(r, inner, outer){
+    const d = r*2;
+    const off = document.createElement('canvas');
+    off.width = off.height = d;
+    const octx = off.getContext('2d');
+    const g = octx.createRadialGradient(r, r, 0, r, r, r);
+    g.addColorStop(0, inner);
+    g.addColorStop(1, outer);
+    octx.fillStyle = g;
+    octx.beginPath();
+    octx.arc(r, r, r, 0, Math.PI*2);
+    octx.fill();
+    return off;
+  }
 
-  // Partikel-Setup
+  // Farben passend zum BG
+  const GOLD  = 'rgba(255,215,130,1)';
+  const GOLD2 = 'rgba(210,160,80,1)';
+  const GOLD_OUT  = 'rgba(255,215,130,0)';
+  const GOLD2_OUT = 'rgba(210,160,80,0)';
+  const HAZE = 'rgba(60,40,15,0.12)';
+
+  const spriteSmall  = makeSprite(6, GOLD, GOLD_OUT);
+  const spriteSmall2 = makeSprite(6, GOLD2, GOLD2_OUT);
+  const spriteBig    = makeSprite(10, GOLD, GOLD_OUT);
+
   const P = [];
-  const BASE_COUNT = 140;  // kannst du höher drehen (z. B. 200)
   function resetParticle(p){
-    const r = Math.random() * 1.6 + 0.3;
-    p.x = Math.random() * canvas.clientWidth;
-    p.y = Math.random() * canvas.clientHeight;
-    p.r = r;
-    p.vx = (Math.random() - 0.5) * 0.25;        // leichter Drift
-    p.vy = Math.random() * 0.65 + 0.15;        // langsames Fallen
-    p.o = Math.random() * 0.6 + 0.35;          // Opazität
-    p.c = Math.random() < 0.55 ? GOLD : GOLD2; // Farbe
-    p.tw = Math.random() * 2 * Math.PI;        // Twinkle Phase
-    p.ts = Math.random() * 0.015 + 0.005;      // Twinkle Speed
+    p.x = Math.random()*vw;
+    p.y = Math.random()*vh;
+    p.vx = (Math.random()-0.5)*0.08; // sehr subtil
+    p.vy = Math.random()*0.18 + 0.05;
+    p.o  = Math.random()*0.6 + 0.35;
+    p.tw = Math.random()*Math.PI*2;
+    p.ts = Math.random()*0.01 + 0.003;
+    p.sp = Math.random() < 0.12 ? spriteBig : (Math.random()<0.5 ? spriteSmall : spriteSmall2);
+    if (Math.random() < 0.6) p.y *= 0.6; // mehr oben verteilen
   }
 
-  function init(){
-    sizeCanvas();
+  function initParticles(){
     P.length = 0;
-    const count = Math.round(BASE_COUNT * (canvas.clientWidth/1280 + canvas.clientHeight/720)/2);
-    for (let i=0;i<count;i++){
+    // adaptive Anzahl (Cap für Mobile)
+    const area = vw*vh;
+    const base = Math.min(140, Math.max(60, Math.round(area/18000))); // ~60–140
+    for (let i=0;i<base;i++){
       const p = {};
       resetParticle(p);
-      // Verteile etwas mehr in der oberen Hälfte (wie Staubkegel)
-      if (Math.random() < 0.6) p.y *= 0.6;
       P.push(p);
     }
   }
 
-  let raf, lastTime = 0;
-  function draw(t){
-    raf = requestAnimationFrame(draw);
-    const dt = Math.min(32, t - lastTime || 16); lastTime = t;
+  // Visibility / InView steuern
+  let inView = true;
+  const hero = document.querySelector('.hero');
+  if ('IntersectionObserver' in window && hero){
+    const io = new IntersectionObserver(([entry])=>{
+      inView = entry.isIntersecting;
+    }, { threshold: 0.05 });
+    io.observe(hero);
+  }
 
-    // zarter „Nebel“-Layer, kein kompletter Clear → smooth trails
-    ctx.fillStyle = AMBI;
-    ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.hidden) inView = false; else inView = true;
+  });
 
-    // sehr leichte Vignette, damit Ränder dunkler wirken
-    const grad = ctx.createRadialGradient(
-      canvas.clientWidth*0.5, canvas.clientHeight*0.45, 0,
-      canvas.clientWidth*0.5, canvas.clientHeight*0.55, Math.max(canvas.clientWidth, canvas.clientHeight)*0.75
-    );
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.08)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,canvas.clientWidth, canvas.clientHeight);
+  // Renderloop (30fps Limiter)
+  let raf = 0, last = performance.now(), acc = 0;
+  const STEP = 1000/30;
+
+  function frame(now){
+    raf = requestAnimationFrame(frame);
+    const dt = Math.min(64, now - last);
+    last = now;
+    acc += dt;
+    if (acc < STEP) return;
+    const delta = acc / 16.6667; // Multiplier ~ frames
+    acc = 0;
+
+    if (!inView) return;
+
+    // leichter Haze, kein voller Clear -> weiche Trails
+    ctx.fillStyle = HAZE;
+    ctx.fillRect(0,0,vw,vh);
 
     // Partikel
-    for (const p of P){
-      // Twinkle
+    for (let i=0;i<P.length;i++){
+      const p = P[i];
+      // twinkle
       const tw = 0.6 + 0.4 * Math.sin(p.tw);
-      p.tw += p.ts * dt;
+      p.tw += p.ts * delta;
 
-      // Bewegung
-      p.x += p.vx * dt * 0.06;
-      p.y += p.vy * dt * 0.06;
+      p.x += p.vx * delta;
+      p.y += p.vy * delta;
 
-      // Wrap/Reset
-      if (p.y > canvas.clientHeight + 10){ p.y = -10; p.x = Math.random()*canvas.clientWidth; }
-      if (p.x < -10) p.x = canvas.clientWidth + 10;
-      if (p.x > canvas.clientWidth + 10) p.x = -10;
+      if (p.y > vh + 12){ p.y = -12; p.x = Math.random()*vw; }
+      if (p.x < -12) p.x = vw + 12;
+      if (p.x > vw + 12) p.x = -12;
 
-      // Zeichnen (weiche Glowscheibe)
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*4);
-      g.addColorStop(0, p.c.replace(/0\.\d+\)$/,'1)'));
-      g.addColorStop(1, p.c);
       ctx.globalAlpha = p.o * tw;
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r*2.2, 0, Math.PI*2);
-      ctx.fill();
+      const sp = p.sp;
+      ctx.drawImage(sp, p.x - sp.width/2, p.y - sp.height/2);
       ctx.globalAlpha = 1;
     }
   }
 
-  // Resize Handling (throttled)
-  let rTO;
-  function onResize(){
-    clearTimeout(rTO);
-    rTO = setTimeout(()=>{ sizeCanvas(); init(); }, 120);
-  }
-  window.addEventListener('resize', onResize);
-
-  // Motion-Preference
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   function start(){
-    if (media.matches) { cancelAnimationFrame(raf); return; }
     cancelAnimationFrame(raf);
-    init();
-    draw(0);
+    if (media.matches) return;
+    sizeCanvas();
+    initParticles();
+    last = performance.now();
+    acc = 0;
+    raf = requestAnimationFrame(frame);
   }
   media.addEventListener?.('change', start);
+  window.addEventListener('resize', ()=>{
+    // throttle resize
+    clearTimeout(start.__t);
+    start.__t = setTimeout(start, 120);
+  });
 
   // Start
-  sizeCanvas();
   start();
 })();
