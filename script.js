@@ -55,90 +55,9 @@ const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================
-   Parallax (DEAKTIVIERT für maximale Ruhe)
-   -> Bild bleibt exakt wie beim Laden.
+   Parallax & Canvas: NICHT benötigt
+   → Effekt läuft vollständig in CSS, absolut scroll-unabhängig
 ========================= */
-// (absichtlich leer gelassen)
-
-/* =========================
-   Goldener Regen – ultra stabil (scroll-unabhängig)
-   - Keine Pausen/Observer; läuft konstant
-   - Delta-Zeit für konstante Geschwindigkeit
-   - Resize skaliert Partikel-Positionen proportional (kein Reset)
-========================= */
-(function(){
-  const canvas = document.getElementById('glitterCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d', { alpha:true });
-
-  let w=0, h=0, DPR=1, P=[];
-  const DPR_CAP = Math.min(window.devicePixelRatio || 1.5, 2);
-
-  function resize(scalePositions=true){
-    const oldW = w, oldH = h;
-    w = canvas.clientWidth|0;
-    h = canvas.clientHeight|0;
-    DPR = DPR_CAP;
-    canvas.width  = Math.max(1, w * DPR);
-    canvas.height = Math.max(1, h * DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-
-    if (scalePositions && oldW>0 && oldH>0){
-      const sx = w/oldW, sy = h/oldH;
-      for (const p of P){ p.x *= sx; p.y *= sy; }
-    }
-  }
-
-  function makeParticle(){
-    return {
-      x: Math.random()*w,
-      y: Math.random()*h,
-      r: Math.random()*1.8 + 0.6,
-      vx: (Math.random()-0.5)*0.22,
-      vy: 0.28 + Math.random()*0.42,
-      o: Math.random()*0.6 + 0.2
-    };
-  }
-
-  function init(){
-    P = [];
-    const count = Math.min(150, Math.max(60, Math.round((w*h)/16000)));
-    for (let i=0;i<count;i++) P.push(makeParticle());
-  }
-
-  let last = performance.now();
-  function frame(now){
-    const dt = Math.min(50, now - last); // ms, capped
-    last = now;
-    const mul = dt / 16.6667; // 60fps-Normalisierung
-
-    // weicher Trail (Glow)
-    ctx.fillStyle = 'rgba(15,10,5,0.15)';
-    ctx.fillRect(0,0,w,h);
-
-    for (const p of P){
-      p.x += p.vx * mul;
-      p.y += p.vy * mul;
-      if (p.y > h + 10) p.y = -10;
-      if (p.x > w + 10) p.x = -10;
-      if (p.x < -10)    p.x = w + 10;
-
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*4);
-      g.addColorStop(0, `rgba(255,220,150,${p.o})`);
-      g.addColorStop(1, `rgba(255,220,150,0)`);
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r*4, 0, Math.PI*2);
-      ctx.fill();
-    }
-    requestAnimationFrame(frame);
-  }
-
-  resize(false);
-  init();
-  requestAnimationFrame(frame);
-  window.addEventListener('resize', ()=> resize(true), { passive:true });
-})();
 
 /* =========================
    Kontaktformular (FormSubmit)
