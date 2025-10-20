@@ -8,7 +8,7 @@ const menu   = document.getElementById('navmenu');
 function openMenu(){
   if (!menu) return;
   menu.classList.add('open');
-  document.body.classList.add('menu-open'); // Body-Scroll sperren
+  document.body.classList.add('menu-open');
   toggle?.setAttribute('aria-expanded','true');
   toggle?.setAttribute('aria-label','Menü schließen');
 }
@@ -19,41 +19,33 @@ function closeMenu(){
   toggle?.setAttribute('aria-expanded','false');
   toggle?.setAttribute('aria-label','Menü öffnen');
 }
-
 if (toggle && menu){
-  // Burger-Button
   toggle.addEventListener('click', () => {
     menu.classList.contains('open') ? closeMenu() : openMenu();
   });
 
-  // Menü: Klick auf egal welchen Link -> Menü schließen.
-  // Bei Ankerlinks zusätzlich smooth scroll.
+  // Jeder Link im Menü schließt das Menü; Anker scrollen smooth
   menu.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (!a) return;
-
     const href = a.getAttribute('href') || '';
     const isHash = href.startsWith('#') && href.length > 1;
 
-    // Menü direkt schließen (auch bei externen Links wie Instagram).
-    closeMenu();
+    closeMenu(); // IMMER schließen (auch Instagram etc.)
 
     if (isHash){
       const target = document.querySelector(href);
       if (target){
         e.preventDefault();
-        setTimeout(() => {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
+        setTimeout(() => target.scrollIntoView({ behavior:'smooth', block:'start' }), 140);
       }
     }
   });
 
-  // ESC schließt
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 }
 
-// Header-Schatten ab minimalem Scroll
+// Header-Schatten
 window.addEventListener('scroll', () => {
   const y = window.scrollY || window.pageYOffset;
   header.style.boxShadow = y > 6 ? '0 12px 28px rgba(0,0,0,.35)' : 'none';
@@ -76,10 +68,10 @@ const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* =========================================
-   Sanftes Parallax für Hero-Bild (ruckelfrei)
-   - Desktop: spürbar
-   - Mobile/Touch: dezent, aber aktiv
-   -> Nur Scroll-basierte Berechnung (kein touchmove), RAF gefiltert
+   Ultra-smooth Parallax für Hero (auch Mobile)
+   - Kein touchmove nötig (nur Scroll/RAF) → kein Jank
+   - Rechnet relativ zu pageYOffset → auf iOS stabil
+   - Mobile stärker sichtbar als zuvor
 ========================================= */
 (function(){
   const heroImg = document.getElementById('heroImg');
@@ -87,61 +79,80 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   if (!heroImg || !heroSec) return;
 
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const isTouch = window.matchMedia('(pointer:coarse)');
 
-  let maxOffset = isTouch.matches ? 10 : 18; // px Bewegungstiefe
-  let ease = 0.10;                           // Nachzieh-Geschwindigkeit
+  // Dynamische Stärke: Mobile bekommt mehr Offset, Desktop etwas weniger (weil Canvas + GPU)
+  function getMaxOffset(){
+    const coarse = window.matchMedia('(pointer:coarse)').matches;
+    return coarse ? 22 : 16; // px
+  }
+  let MAX = getMaxOffset();
+  let EASE = 0.12; // Nachzieh-Geschwindigkeit
 
-  prefersReduce.addEventListener?.('change', setup);
-  isTouch.addEventListener?.('change', setup);
+  // Sektion-Top/Height per Layout, stabil für iOS
+  let secTop = 0, secHeight = 0, vh = window.innerHeight;
+  function measure(){
+    const rect = heroSec.getBoundingClientRect();
+    // rect.top relativ zum Viewport → auf Pageoffset umrechnen
+    secTop = (window.pageYOffset || document.documentElement.scrollTop) + rect.top;
+    secHeight = rect.height;
+    vh = window.innerHeight || document.documentElement.clientHeight;
+    MAX = getMaxOffset();
+  }
 
-  let targetY = 0, currentY = 0, raf = 0, inView = true;
+  let targetY = 0, currentY = 0, ticking = false, inView = true;
 
-  // Sichtbarkeit überwachen -> spart Rechenzeit
+  // Sichtbarkeit (spart Batterie)
   if ('IntersectionObserver' in window){
     const io = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting;
-      if (inView) onScroll();
-    }, { threshold: 0.05 });
+      if (inView) requestTick();
+    }, { threshold: 0.01 });
     io.observe(heroSec);
   }
 
-  function setup(){
-    if (prefersReduce.matches){
-      // Keine Bewegung gewünscht
-      heroImg.style.transform = 'translate3d(0,0,0)';
-      cancelAnimationFrame(raf); raf = 0;
-      return;
-    }
-    maxOffset = isTouch.matches ? 10 : 18;
-    onScroll();
+  function computeTarget(scrollY){
+    // progress: 0..1, wenn der Viewport die Sektion durchläuft
+    const start = secTop - vh;
+    const end   = secTop + secHeight;
+    const progressRaw = (scrollY - start) / (end - start);
+    const progress = Math.max(0, Math.min(1, progressRaw));
+    // map auf -0.5..+0.5 und skaliere mit MAX
+    return (progress - 0.5) * -MAX;
   }
 
   function onScroll(){
     if (prefersReduce.matches || !inView) return;
-
-    // Nur Scroll + getBoundingClientRect -> kein Touch-Listener, kein Jank
-    const rect = heroSec.getBoundingClientRect();
-    const vh = window.innerHeight || document.documentElement.clientHeight;
-
-    // Position des Abschnitts relativ zum Viewportmittelpunkt normalisieren
-    const norm = ((rect.top + rect.height/2) - vh/2) / (vh + rect.height);
-    targetY = -norm * maxOffset; // bewegt leicht entgegen der Scrollrichtung
-
-    if (!raf) raf = requestAnimationFrame(tick);
+    requestTick();
   }
 
-  function tick(){
-    raf = 0;
-    currentY += (targetY - currentY) * ease;
+  function requestTick(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }
+
+  function update(){
+    ticking = false;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    targetY = computeTarget(scrollY);
+    // sanftes Nachziehen
+    currentY += (targetY - currentY) * EASE;
     heroImg.style.transform = `translate3d(0, ${currentY.toFixed(2)}px, 0)`;
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = 0; onScroll(); }, { passive:true });
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', () => { measure(); requestTick(); }, { passive:true });
+  prefersReduce.addEventListener?.('change', () => {
+    if (prefersReduce.matches){
+      heroImg.style.transform = 'translate3d(0,0,0)';
+    } else {
+      measure(); requestTick();
+    }
+  });
 
-  setup();
-  onScroll();
+  // Initial
+  measure();
+  requestTick();
 })();
 
 /* =========================================
@@ -156,7 +167,7 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = window.matchMedia('(pointer:coarse)').matches;
   if (prefersReduce || isTouch){
-    canvas.remove(); // mobil aus Performance-Gründen deaktiviert
+    canvas.remove();
     return;
   }
 
@@ -177,91 +188,78 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     const d = r*2;
     const off = document.createElement('canvas');
     off.width = off.height = d;
-    const octx = off.getContext('2d');
-    const g = octx.createRadialGradient(r, r, 0, r, r, r);
-    g.addColorStop(0, inner);
-    g.addColorStop(1, outer);
-    octx.fillStyle = g;
-    octx.beginPath(); octx.arc(r, r, r, 0, Math.PI*2); octx.fill();
+    const o = off.getContext('2d');
+    const g = o.createRadialGradient(r, r, 0, r, r, r);
+    g.addColorStop(0, inner); g.addColorStop(1, outer);
+    o.fillStyle = g; o.beginPath(); o.arc(r, r, r, 0, Math.PI*2); o.fill();
     return off;
   }
 
-  const GOLD  = 'rgba(255,215,130,1)';
-  const GOLD2 = 'rgba(210,160,80,1)';
-  const GOLD0 = 'rgba(255,215,130,0)';
-  const GOLD20= 'rgba(210,160,80,0)';
-  const HAZE  = 'rgba(60,40,15,0.12)';
+  const GOLD='rgba(255,215,130,1)', GOLD2='rgba(210,160,80,1)';
+  const GOLD0='rgba(255,215,130,0)', GOLD20='rgba(210,160,80,0)';
+  const HAZE='rgba(60,40,15,0.12)';
 
   const spS  = makeSprite(6,  GOLD,  GOLD0);
   const spS2 = makeSprite(6,  GOLD2, GOLD20);
   const spB  = makeSprite(10, GOLD,  GOLD0);
 
-  const P = [];
+  const P=[];
   function reset(p){
-    p.x = Math.random()*vw; p.y = Math.random()*vh;
-    p.vx = (Math.random()-0.5)*0.08;
-    p.vy = Math.random()*0.18 + 0.05;
-    p.o  = Math.random()*0.6 + 0.35;
-    p.tw = Math.random()*Math.PI*2;
-    p.ts = Math.random()*0.01 + 0.003;
-    p.sp = Math.random() < 0.12 ? spB : (Math.random()<0.5 ? spS : spS2);
-    if (Math.random() < 0.6) p.y *= 0.6;
+    p.x=Math.random()*vw; p.y=Math.random()*vh;
+    p.vx=(Math.random()-0.5)*0.08; p.vy=Math.random()*0.18+0.05;
+    p.o=Math.random()*0.6+0.35; p.tw=Math.random()*Math.PI*2; p.ts=Math.random()*0.01+0.003;
+    p.sp=Math.random()<0.12?spB:(Math.random()<0.5?spS:spS2);
+    if(Math.random()<0.6) p.y*=0.6;
   }
   function init(){
-    P.length = 0;
-    const base = Math.min(140, Math.max(60, Math.round((vw*vh)/18000)));
-    for (let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
+    P.length=0;
+    const base=Math.min(140, Math.max(60, Math.round((vw*vh)/18000)));
+    for(let i=0;i<base;i++){ const p={}; reset(p); P.push(p); }
   }
 
+  // Sichtbarkeit
   let inView = true;
   const hero = document.querySelector('.hero');
   if ('IntersectionObserver' in window && hero){
-    const io = new IntersectionObserver(([entry]) => {
-      inView = entry.isIntersecting;
-    }, { threshold: 0.05 });
+    const io = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; }, { threshold:0.05 });
     io.observe(hero);
   }
   document.addEventListener('visibilitychange', () => { inView = !document.hidden; });
 
-  // 30 fps Limiter
-  let raf=0, last=performance.now(), acc=0;
-  const STEP=1000/30;
+  // 30fps Limiter
+  let raf=0, last=performance.now(), acc=0; const STEP=1000/30;
 
   function frame(now){
-    raf = requestAnimationFrame(frame);
-    const dt = Math.min(64, now - last); last = now; acc += dt;
-    if (acc < STEP || !inView) return;
-    const mul = acc / 16.6667; acc = 0;
+    raf=requestAnimationFrame(frame);
+    const dt=Math.min(64, now-last); last=now; acc+=dt;
+    if (acc<STEP || !inView) return;
+    const mul=acc/16.6667; acc=0;
 
-    ctx.fillStyle = HAZE;
-    ctx.fillRect(0,0,vw,vh);
+    ctx.fillStyle=HAZE; ctx.fillRect(0,0,vw,vh);
 
     for (let i=0;i<P.length;i++){
-      const p = P[i];
-      const tw = 0.6 + 0.4 * Math.sin(p.tw); p.tw += p.ts * mul;
-      p.x += p.vx * mul; p.y += p.vy * mul;
+      const p=P[i];
+      const tw=0.6+0.4*Math.sin(p.tw); p.tw+=p.ts*mul;
+      p.x+=p.vx*mul; p.y+=p.vy*mul;
+      if (p.y>vh+12){p.y=-12; p.x=Math.random()*vw;}
+      if (p.x<-12) p.x=vw+12; if (p.x>vw+12) p.x=-12;
 
-      if (p.y > vh + 12){ p.y = -12; p.x = Math.random()*vw; }
-      if (p.x < -12) p.x = vw + 12;
-      if (p.x > vw + 12) p.x = -12;
-
-      ctx.globalAlpha = p.o * tw;
-      ctx.drawImage(p.sp, p.x - p.sp.width/2, p.y - p.sp.height/2);
+      ctx.globalAlpha=p.o*tw;
+      ctx.drawImage(p.sp, p.x-p.sp.width/2, p.y-p.sp.height/2);
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha=1;
   }
 
   function start(){
     cancelAnimationFrame(raf);
     sizeCanvas(); init();
-    last = performance.now(); acc = 0;
-    raf = requestAnimationFrame(frame);
+    last=performance.now(); acc=0;
+    raf=requestAnimationFrame(frame);
   }
 
   window.addEventListener('resize', () => {
-    clearTimeout(start._t);
-    start._t = setTimeout(start, 120);
-  }, { passive: true });
+    clearTimeout(start._t); start._t=setTimeout(start,120);
+  }, { passive:true });
 
   start();
 })();
