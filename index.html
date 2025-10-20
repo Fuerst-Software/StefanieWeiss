@@ -34,8 +34,10 @@
       <div class="hero__bg">
         <img id="heroImg" src="hintergrund.png" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
         <div class="hero__overlay"></div>
-        <!-- goldener Regen -->
-        <canvas id="glitterCanvas" aria-hidden="true"></canvas>
+
+        <!-- Goldener Regen: zwei CSS-Schichten (kein Canvas) -->
+        <div class="glitter-layer glitter-fast" aria-hidden="true"></div>
+        <div class="glitter-layer glitter-slow" aria-hidden="true"></div>
       </div>
 
       <div class="hero__content container">
