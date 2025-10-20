@@ -71,7 +71,8 @@ img{max-width:100%;height:auto;display:block}
     radial-gradient(rgba(210,160,80,.9) 1px, rgba(0,0,0,0) 1.1px);
   background-size: 120px 120px, 150px 150px;
   background-position: 0 0, 60px 40px;
-  animation: glitter-fall 16s linear infinite;
+  /* vorher 16s → jetzt deutlich langsamer */
+  animation: glitter-fall 55s linear infinite;
 }
 
 .glitter-slow{
@@ -80,9 +81,11 @@ img{max-width:100%;height:auto;display:block}
     radial-gradient(rgba(200,150,70,.6) 1.2px, rgba(0,0,0,0) 1.3px);
   background-size: 180px 180px, 220px 220px;
   background-position: 30px -60px, 100px -20px;
-  animation: glitter-fall 28s linear infinite reverse;
+  /* vorher 28s → jetzt noch gemächlicher */
+  animation: glitter-fall 95s linear infinite reverse;
   opacity:.5;
 }
+
 
 /* Fallback für iOS „screen“ Blend auf Mobile */
 @media (max-width:600px){
