@@ -333,7 +333,7 @@
               if (!res.ok) throw new Error('Sende-Fehler');
               await res.json();
 
-              showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns asap.', true);
+              showStatus('Danke! Deine Anfrage ist eingegangen – wir melden uns zeitnah.', true);
               form.reset();
               form.classList.remove('was-validated');
             } catch (err) {
@@ -362,3 +362,4 @@
   <script src="script.js" defer></script>
 </body>
 </html>
+
