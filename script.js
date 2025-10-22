@@ -120,3 +120,44 @@ if (yearEl) yearEl.textContent = new Date().getFullYear();
     }
   });
 })();
+/* =========================
+   Cookie Consent
+========================= */
+(() => {
+  const KEY = 'cookieConsent';
+  const banner = document.querySelector('.cc-banner');
+  const btnAll = document.getElementById('cc-acc');
+  const btnEss = document.getElementById('cc-ess');
+
+  const hide = () => banner?.setAttribute('hidden','');
+  const show = () => banner?.removeAttribute('hidden');
+
+  // bereits gesetzte Zustimmung?
+  const saved = localStorage.getItem(KEY);
+  if (!saved) {
+    // leicht verzögert einblenden + kleine slide-in anim
+    setTimeout(() => {
+      show();
+      requestAnimationFrame(() => banner?.classList.add('show'));
+    }, 600);
+  }
+
+  const fireEvent = (level) => {
+    // Für spätere Integrationen (Analytics erst nach Opt-in starten)
+    window.dispatchEvent(new CustomEvent('consentchange', { detail: { level } }));
+  };
+
+  btnAll?.addEventListener('click', () => {
+    localStorage.setItem(KEY, 'accepted');
+    banner?.classList.remove('show');
+    setTimeout(hide, 200);
+    fireEvent('all');
+  });
+
+  btnEss?.addEventListener('click', () => {
+    localStorage.setItem(KEY, 'essential');
+    banner?.classList.remove('show');
+    setTimeout(hide, 200);
+    fireEvent('essential');
+  });
+})();
