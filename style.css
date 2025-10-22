@@ -65,13 +65,11 @@ img{max-width:100%;height:auto;display:block}
 
 /* Wir bauen „Goldstaub“-Kacheln via mehreren radial-gradient Mustern */
 .glitter-fast{
-  /* zwei wiederholende Raster mit leicht versetzten Punkten */
   background-image:
     radial-gradient(rgba(255,220,150,.95) 1.2px, rgba(0,0,0,0) 1.3px),
     radial-gradient(rgba(210,160,80,.9) 1px, rgba(0,0,0,0) 1.1px);
   background-size: 120px 120px, 150px 150px;
   background-position: 0 0, 60px 40px;
-  /* vorher 16s → jetzt deutlich langsamer */
   animation: glitter-fall 55s linear infinite;
 }
 
@@ -81,18 +79,14 @@ img{max-width:100%;height:auto;display:block}
     radial-gradient(rgba(200,150,70,.6) 1.2px, rgba(0,0,0,0) 1.3px);
   background-size: 180px 180px, 220px 220px;
   background-position: 30px -60px, 100px -20px;
-  /* vorher 28s → jetzt noch gemächlicher */
   animation: glitter-fall 95s linear infinite reverse;
   opacity:.5;
 }
 
-
-/* Fallback für iOS „screen“ Blend auf Mobile */
 @media (max-width:600px){
   .glitter-layer{ mix-blend-mode:normal; opacity:.6; }
 }
 
-/* Bewegung rein über Background-Position → super stabil */
 @keyframes glitter-fall{
   from { background-position: 0 0, 60px 40px; }
   to   { background-position: 0 1000px, 60px 1040px; }
@@ -157,28 +151,84 @@ img{max-width:100%;height:auto;display:block}
 /* Button-Reihe */
 .btn-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:flex-start}
 .btn-row .btn{flex:1 1 auto;min-width:220px;text-align:center}
-/* =========================
-   Cookie Banner
-========================= */
-.cc-banner{
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999;
-  background: var(--bg-850); color: var(--ink);
-  border-top: 1px solid var(--line);
-  box-shadow: 0 -12px 32px rgba(0,0,0,.45);
-  padding: 12px 0;
-  transform: translateY(12px);
-  opacity: 0;
-  transition: transform .28s ease, opacity .28s ease;
+
+/* ===============================
+   🔔 Cookie Banner Styles (NEU)
+   =============================== */
+#cookie-banner{
+  position: fixed;
+  inset: auto 0 16px 0;
+  z-index: 99999;
+  display: none; /* per JS sichtbar */
 }
-.cc-banner.show{ transform: translateY(0); opacity: 1; }
-.cc-inner{ display: flex; align-items: center; gap: 18px; justify-content: space-between; }
-.cc-text{
-  margin: 0; line-height: 1.45; font-size: .95rem; color: var(--ink-dim);
+.cookie-wrap{
+  margin: 0 auto;
+  max-width: min(980px, 92vw);
+  background: linear-gradient(135deg, rgba(20,18,16,.80), rgba(20,18,16,.66));
+  backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 40px rgba(0,0,0,.55);
+  border-radius: var(--radius);
+  padding: 14px 16px;
 }
-.cc-text a{ color: var(--amber); text-decoration: underline; }
-.cc-actions{ display: flex; gap: 10px; flex-shrink: 0; }
-@media (max-width: 880px){
-  .cc-inner{ flex-direction: column; align-items: stretch; gap: 12px; }
-  .cc-actions{ justify-content: stretch; }
-  .cc-actions .btn{ width: 100%; }
+.cookie-inner{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 18px;
+  align-items: center;
+}
+.cookie-title{
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--amber);
+  margin: 0 0 .2rem 0;
+}
+.cookie-text{
+  font-size: .95rem;
+  color: var(--ink-dim);
+  margin: 0;
+}
+.cookie-actions{
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cookie-btn{
+  border-radius: 999px;
+  padding: .55rem 1rem;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--bg-800);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease;
+}
+.cookie-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.14);
+}
+.cookie-btn-accept{
+  background: linear-gradient(145deg, var(--amber), #e0b07a);
+  color: #0b0b0b;
+  border: none;
+  box-shadow: 0 0 16px var(--amber-glow);
+}
+.cookie-link{ color: var(--amber); font-weight: 700; text-decoration: none; }
+.cookie-link:hover{ text-decoration: underline; }
+
+@media (max-width: 575.98px){
+  .cookie-inner{ grid-template-columns: 1fr; }
+  .cookie-actions{ justify-content: stretch; }
+  .cookie-actions .cookie-btn{ flex: 1 1 auto; text-align: center; }
+}
+
+/* Noscript Hinweis minimal */
+#cookie-noscript{
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background:#111; color:#fff;
+  padding:.6rem .9rem; text-align:center;
+  font-size:.9rem; z-index:99998;
 }
