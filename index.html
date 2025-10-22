@@ -3,39 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>Stefanie Weiss – Work With Me</title>
   <meta name="description" content="Leadership, Launching, Mindset. High-Impact Coaching & Web für ambitionierte Unternehmerinnen." />
-
-  <!-- SEO Basics -->
-  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-  <meta name="author" content="Stefanie Weiss" />
-  <meta name="keywords" content="Stefanie Weiss, Social Media Coaching, Instagram Strategie, 7-Schritte-Plan, Profilanalyse, Mindset, Launching, Website-Erstellung, Fürst Software, Social Media Website, Business Onepager" />
-  <link rel="canonical" href="https://social.steffi.at/" />
-  <meta name="theme-color" content="#0f0b07" />
-
-  <!-- Open Graph -->
-  <meta property="og:locale" content="de_AT" />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Stefanie Weiss – Work With Me" />
-  <meta property="og:description" content="Leadership, Launching, Mindset. High-Impact Coaching & Web für ambitionierte Unternehmerinnen." />
-  <meta property="og:url" content="https://social.steffi.at/" />
-  <meta property="og:site_name" content="Stefanie Weiss" />
-  <meta property="og:image" content="https://social.steffi.at/og-preview.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Stefanie Weiss – Work With Me" />
-  <meta name="twitter:description" content="Leadership, Launching, Mindset. High-Impact Coaching & Web für ambitionierte Unternehmerinnen." />
-  <meta name="twitter:image" content="https://social.steffi.at/og-preview.jpg" />
-
-  <!-- Favicons -->
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-
-  <!-- Fonts & Styles -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -177,7 +146,7 @@
           Stöbere gerne durch oder arbeite direkt mit mir zusammen,  
           um deinen Online-Auftritt gezielt weiterzuentwickeln und sichtbar zu machen.
         </p>
-        <a class="btn btn--ghost" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">Mit mir Arbeiten</a>
+        <a class="btn" href="#contact">Mit mir arbeiten</a>
       </div>
     </section>
 
@@ -289,6 +258,33 @@
 
       </div>
     </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section section--contact">
+      <div class="container contact grid grid-2">
+        <div class="contact__card card">
+          <h2 class="sec-title sec-title--small">Zusammenarbeit Anfragen</h2>
+
+          <form id="contactForm" class="grid grid-2" action="#" method="post" novalidate>
+            <label class="field"><span>Name*</span><input id="name" type="text" name="name" required autocomplete="name"></label>
+            <label class="field"><span>E-Mail*</span><input id="email" type="email" name="email" required autocomplete="email" inputmode="email"></label>
+            <label class="field field--full"><span>Projekt / Ziel*</span><textarea id="msg" name="msg" rows="4" required></textarea></label>
+            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+            <div class="field field--full"><button class="btn" type="submit">Absenden</button></div>
+          </form>
+
+          <p id="cf-toast" class="toast" style="display:none;"></p>
+        </div>
+
+        <aside class="contact__aside card">
+          <h3 class="card__title">Direkt vernetzen</h3>
+          <div class="stack">
+            <a class="btn" href="https://www.instagram.com/social.steffi/" target="_blank" rel="noopener">Instagram</a>
+            <a class="btn" href="https://www.fuerst-software.com" target="_blank" rel="noopener">Website-Erstellung</a>
+          </div>
+        </aside>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -302,22 +298,33 @@
     </div>
   </footer>
 
-  <script src="script.js" defer></script>
-  <!-- Cookie Banner -->
-<div class="cc-banner" role="dialog" aria-live="polite" aria-label="Cookie-Hinweis" hidden>
-  <div class="container cc-inner">
-    <p class="cc-text">
-      Wir verwenden Cookies, um Inhalte bereitzustellen und die Performance zu verbessern.
-      Mehr Infos in der <a href="datenschutz.html">Datenschutzerklärung</a>.
-    </p>
-    <div class="cc-actions">
-      <button class="btn btn--ghost" id="cc-ess">Nur notwendige</button>
-      <button class="btn" id="cc-acc">Alle akzeptieren</button>
+  <!-- 🔔 COOKIE BANNER (NEU) -->
+  <div id="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie Hinweis">
+    <div class="cookie-wrap">
+      <div class="cookie-inner">
+        <div>
+          <p class="cookie-title">Cookies & Datenschutz</p>
+          <p class="cookie-text">
+            Wir verwenden essenzielle Cookies für den Betrieb. Optionale Cookies helfen uns,
+            die Website zu verbessern. <a class="cookie-link" href="datenschutz.html">Mehr erfahren</a>.
+          </p>
+        </div>
+        <div class="cookie-actions">
+          <button class="cookie-btn" id="cookie-decline" type="button" aria-label="Nur essenzielle Cookies erlauben">Nur Essenzielle</button>
+          <button class="cookie-btn cookie-btn-accept" id="cookie-accept" type="button" aria-label="Alle Cookies akzeptieren">Alle akzeptieren</button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
+  <noscript>
+    <div id="cookie-noscript">Hinweis: Cookies werden ohne JavaScript nicht verwaltet. Bitte JS aktivieren.</div>
+  </noscript>
+
+  <!-- Deine bestehenden Skripte -->
+  <script src="script.js" defer></script>
+
+  <!-- ✅ Cookie Consent Script (NEU) -->
+  <script src="cookie-consent.js" defer></script>
 </body>
 </html>
-
-
