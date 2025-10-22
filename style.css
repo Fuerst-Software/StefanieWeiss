@@ -157,3 +157,28 @@ img{max-width:100%;height:auto;display:block}
 /* Button-Reihe */
 .btn-row{display:flex;flex-wrap:wrap;gap:16px;justify-content:flex-start}
 .btn-row .btn{flex:1 1 auto;min-width:220px;text-align:center}
+/* =========================
+   Cookie Banner
+========================= */
+.cc-banner{
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999;
+  background: var(--bg-850); color: var(--ink);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -12px 32px rgba(0,0,0,.45);
+  padding: 12px 0;
+  transform: translateY(12px);
+  opacity: 0;
+  transition: transform .28s ease, opacity .28s ease;
+}
+.cc-banner.show{ transform: translateY(0); opacity: 1; }
+.cc-inner{ display: flex; align-items: center; gap: 18px; justify-content: space-between; }
+.cc-text{
+  margin: 0; line-height: 1.45; font-size: .95rem; color: var(--ink-dim);
+}
+.cc-text a{ color: var(--amber); text-decoration: underline; }
+.cc-actions{ display: flex; gap: 10px; flex-shrink: 0; }
+@media (max-width: 880px){
+  .cc-inner{ flex-direction: column; align-items: stretch; gap: 12px; }
+  .cc-actions{ justify-content: stretch; }
+  .cc-actions .btn{ width: 100%; }
+}
